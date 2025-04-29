@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Split Image into Left and Right</title>
+</head>
+<body>
+  <h1>Split Image into Left and Right</h1>
+
+  <input type="file" id="upload" accept="image/*">
+  <br><br>
+  <button id="splitButton">Split and Download</button>
+
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const splitButton = document.getElementById('splitButton');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let img = new Image();
+
+    upload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    splitButton.addEventListener('click', () => {
+      if (!img.src) {
+        alert('Please upload an image first.');
+        return;
+      }
+
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const halfWidth = width / 2;
+
+        // Set canvas size for the full image
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0);
+
+        // Left half
+        const leftCanvas = document.createElement('canvas');
+        const leftCtx = leftCanvas.getContext('2d');
+        leftCanvas.width = halfWidth;
+        leftCanvas.height = height;
+        leftCtx.drawImage(canvas, 0, 0, halfWidth, height, 0, 0, halfWidth, height);
+
+        // Right half
+        const rightCanvas = document.createElement('canvas');
+        const rightCtx = rightCanvas.getContext('2d');
+        rightCanvas.width = halfWidth;
+        rightCanvas.height = height;
+        rightCtx.drawImage(canvas, halfWidth, 0, halfWidth, height, 0, 0, halfWidth, height);
+
+        // Download left half
+        const leftLink = document.createElement('a');
+        leftLink.download = 'left_half.png';
+        leftLink.href = leftCanvas.toDataURL();
+        leftLink.click();
+
+        // Download right half
+        const rightLink = document.createElement('a');
+        rightLink.download = 'right_half.png';
+        rightLink.href = rightCanvas.toDataURL();
+        rightLink.click();
+      }
+
+      // If image already loaded (cached), trigger onload manually
+      if (img.complete) {
+        img.onload();
+      }
+    });
+  </script>
+</body>
+</html>
