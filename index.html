@@ -2,87 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Split Image into 25 Pixel Squares</title>
+  <title>Split Image into Custom Pixel Squares</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <h1>Split Image into 25 Pixel Squares</h1>
+  <h1>Split Image into Custom Pixel Squares</h1>
 
   <input type="file" id="upload" accept="image/*">
   <br><br>
-  <button id="splitButton">Split and Download</button>
+  Width: <input type="number" id="pieceWidth" value="25" min="1"> px
+  Height: <input type="number" id="pieceHeight" value="25" min="1"> px
+  <br><br>
+  Desired Total Width: <input type="number" id="desiredWidthFeet" step="0.01" min="0"> feet
+  <br><br>
+  Desired Total Width Inches: <input type="number" id="desiredWidthInches" step="0.01" min="0"> inches
+  <br><br>
+  <input type="checkbox" id="bwMode"> Black & White mode
+  <input type="checkbox" id="outlineMode"> Outline mode (Coloring Book)
+  <br><br>
+  Brightness: <input type="range" id="brightness" min="-500" max="500" value="0"> <span id="brightnessValue">0</span>
+  <br><br>
+  <button id="setFeetByInchesButton">Set Feet by Inches</button>
+  <button id="setPixelsButton">Set Pixels Horizontal</button>
+  <button id="setPixelsVerticalButton">Set Pixels Vertical</button>
+  <button id="splitButton">Split and Download PNG</button>
+  <button id="splitJPGButton">Split and Download JPG</button>
+  <button id="splitPDFButton">Split and Download PDF</button>
+  <button id="showDimensionsButton">Show Image Dimensions</button>
+  <p id="dimensionsDisplay"></p>
 
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
-    const upload = document.getElementById('upload');
-    const splitButton = document.getElementById('splitButton');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let img = new Image();
+    const brightnessSlider = document.getElementById('brightness');
+    const brightnessValue = document.getElementById('brightnessValue');
 
-    upload.addEventListener('change', (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-
-    splitButton.addEventListener('click', () => {
-      if (!img.src) {
-        alert('Please upload an image first.');
-        return;
-      }
-
-      img.onload = () => {
-        const width = img.width;
-        const height = img.height;
-        const pieceSize = 25;
-
-        // Set canvas size for the full image
-        canvas.width = width;
-        canvas.height = height;
-        ctx.drawImage(img, 0, 0);
-
-        let count = 1;
-        for (let y = 0; y < height; y += pieceSize) {
-          for (let x = 0; x < width; x += pieceSize) {
-            const pieceCanvas = document.createElement('canvas');
-            const pieceCtx = pieceCanvas.getContext('2d');
-            const pieceWidth = Math.min(pieceSize, width - x);
-            const pieceHeight = Math.min(pieceSize, height - y);
-            pieceCanvas.width = pieceWidth;
-            pieceCanvas.height = pieceHeight;
-
-            pieceCtx.drawImage(
-              canvas,
-              x,
-              y,
-              pieceWidth,
-              pieceHeight,
-              0,
-              0,
-              pieceWidth,
-              pieceHeight
-            );
-
-            // Download each piece
-            const link = document.createElement('a');
-            link.download = `piece_${count}.png`;
-            link.href = pieceCanvas.toDataURL();
-            link.click();
-            count++;
-          }
-        }
-      }
-
-      // If image already loaded (cached), trigger onload manually
-      if (img.complete) {
-        img.onload();
-      }
+    brightnessSlider.addEventListener('input', () => {
+      brightnessValue.textContent = brightnessSlider.value;
     });
   </script>
 </body>
