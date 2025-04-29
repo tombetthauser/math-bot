@@ -20,7 +20,7 @@
   <input type="checkbox" id="bwMode"> Black & White mode
   <input type="checkbox" id="outlineMode"> Outline mode (Coloring Book)
   <br><br>
-  Brightness: <input type="range" id="brightness" min="-500" max="500" value="0"> <span id="brightnessValue">0</span>
+  Brightness: <input type="range" id="brightness" min="-100" max="100" value="0">
   <br><br>
   <button id="setFeetByInchesButton">Set Feet by Inches</button>
   <button id="setPixelsButton">Set Pixels Horizontal</button>
@@ -34,11 +34,221 @@
   <canvas id="canvas" style="display:none;"></canvas>
 
   <script>
+    const upload = document.getElementById('upload');
+    const splitButton = document.getElementById('splitButton');
+    const splitJPGButton = document.getElementById('splitJPGButton');
+    const splitPDFButton = document.getElementById('splitPDFButton');
+    const showDimensionsButton = document.getElementById('showDimensionsButton');
+    const setPixelsButton = document.getElementById('setPixelsButton');
+    const setPixelsVerticalButton = document.getElementById('setPixelsVerticalButton');
+    const setFeetByInchesButton = document.getElementById('setFeetByInchesButton');
+    const bwMode = document.getElementById('bwMode');
+    const outlineMode = document.getElementById('outlineMode');
     const brightnessSlider = document.getElementById('brightness');
-    const brightnessValue = document.getElementById('brightnessValue');
+    const dimensionsDisplay = document.getElementById('dimensionsDisplay');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const pieceWidthInput = document.getElementById('pieceWidth');
+    const pieceHeightInput = document.getElementById('pieceHeight');
+    const desiredWidthFeetInput = document.getElementById('desiredWidthFeet');
+    const desiredWidthInchesInput = document.getElementById('desiredWidthInches');
+    let img = new Image();
 
-    brightnessSlider.addEventListener('input', () => {
-      brightnessValue.textContent = brightnessSlider.value;
+    function applyBrightness(ctx, width, height, adjustment) {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] += adjustment;
+        data[i+1] += adjustment;
+        data[i+2] += adjustment;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function applyBW(ctx, width, height) {
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+        data[i] = data[i+1] = data[i+2] = avg;
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    function applyOutline(ctx, width, height) {
+      applyBrightness(ctx, width, height, parseInt(brightnessSlider.value, 10));
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const data = imgData.data;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+          data[i] = data[i+1] = data[i+2] = avg;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+
+      const outlineData = ctx.getImageData(0, 0, width, height);
+      const outData = outlineData.data;
+      for (let y = 0; y < height - 1; y++) {
+        for (let x = 0; x < width - 1; x++) {
+          const i = (y * width + x) * 4;
+          const diff = Math.abs(outData[i] - outData[i + 4]) + Math.abs(outData[i] - outData[i + width * 4]);
+          const edge = diff > 50 ? 0 : 255;
+          outData[i] = outData[i+1] = outData[i+2] = edge;
+        }
+      }
+      ctx.putImageData(outlineData, 0, 0);
+    }
+
+    function splitAndDownload(format, asPDF = false) {
+      if (!img.src) {
+        alert('Please upload an image first.');
+        return;
+      }
+
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const pieceWidth = parseInt(pieceWidthInput.value, 10);
+        const pieceHeight = parseInt(pieceHeightInput.value, 10);
+
+        if (pieceWidth <= 0 || pieceHeight <= 0) {
+          alert('Piece width and height must be greater than 0.');
+          return;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0);
+
+        let row = 1;
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        let firstPage = true;
+
+        for (let y = 0; y < height; y += pieceHeight, row++) {
+          let col = 1;
+          for (let x = 0; x < width; x += pieceWidth, col++) {
+            const pieceCanvas = document.createElement('canvas');
+            const pieceCtx = pieceCanvas.getContext('2d');
+            pieceCanvas.width = pieceWidth;
+            pieceCanvas.height = pieceHeight;
+
+            pieceCtx.fillStyle = 'white';
+            pieceCtx.fillRect(0, 0, pieceWidth, pieceHeight);
+
+            const drawWidth = Math.min(pieceWidth, width - x);
+            const drawHeight = Math.min(pieceHeight, height - y);
+
+            pieceCtx.drawImage(canvas, x, y, drawWidth, drawHeight, 0, 0, drawWidth, drawHeight);
+
+            if (outlineMode.checked) {
+              applyOutline(pieceCtx, pieceWidth, pieceHeight);
+            } else {
+              if (bwMode.checked) {
+                applyBW(pieceCtx, pieceWidth, pieceHeight);
+              }
+              const brightnessAdjustment = parseInt(brightnessSlider.value, 10);
+              if (brightnessAdjustment !== 0) {
+                applyBrightness(pieceCtx, pieceWidth, pieceHeight, brightnessAdjustment);
+              }
+            }
+
+            if (asPDF) {
+              const imgData = pieceCanvas.toDataURL('image/jpeg', 1.0);
+              if (!firstPage) pdf.addPage();
+              pdf.addImage(imgData, 'JPEG', 10, 10, 190, 277);
+              firstPage = false;
+            } else {
+              const link = document.createElement('a');
+              link.download = `img1-row${row}-col${col}.${format}`;
+              link.href = pieceCanvas.toDataURL(`image/${format}`);
+              link.click();
+            }
+          }
+        }
+
+        if (asPDF) {
+          pdf.save('split_images.pdf');
+        }
+      }
+
+      if (img.complete) {
+        img.onload();
+      }
+    }
+
+    upload.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    setFeetByInchesButton.addEventListener('click', () => {
+      const inches = parseFloat(desiredWidthInchesInput.value);
+      if (isNaN(inches) || inches <= 0) {
+        alert('Please enter a valid desired width in inches.');
+        return;
+      }
+      const feet = (inches / 12).toFixed(2);
+      desiredWidthFeetInput.value = feet;
+    });
+
+    setPixelsButton.addEventListener('click', () => {
+      const desiredFeet = parseFloat(desiredWidthFeetInput.value);
+      if (!img.src || isNaN(desiredFeet) || desiredFeet <= 0) {
+        alert('Please upload an image and enter a valid desired width in feet.');
+        return;
+      }
+
+      const totalInches = desiredFeet * 12;
+      const numPages = totalInches / 11;
+      const pixelWidth = Math.ceil(img.width / numPages);
+      const pixelHeight = Math.ceil((pixelWidth * 8.5) / 11);
+
+      pieceWidthInput.value = pixelWidth;
+      pieceHeightInput.value = pixelHeight;
+    });
+
+    setPixelsVerticalButton.addEventListener('click', () => {
+      const desiredFeet = parseFloat(desiredWidthFeetInput.value);
+      if (!img.src || isNaN(desiredFeet) || desiredFeet <= 0) {
+        alert('Please upload an image and enter a valid desired width in feet.');
+        return;
+      }
+
+      const totalInches = desiredFeet * 12;
+      const numPages = totalInches / 8.5;
+      const pixelWidth = Math.ceil(img.height / numPages);
+      const pixelHeight = Math.ceil((pixelWidth * 11) / 8.5);
+
+      pieceWidthInput.value = pixelWidth;
+      pieceHeightInput.value = pixelHeight;
+    });
+
+    splitButton.addEventListener('click', () => splitAndDownload('png'));
+    splitJPGButton.addEventListener('click', () => splitAndDownload('jpeg'));
+    splitPDFButton.addEventListener('click', () => splitAndDownload('jpeg', true));
+
+    showDimensionsButton.addEventListener('click', () => {
+      if (!img.src) {
+        alert('Please upload an image first.');
+        return;
+      }
+
+      if (img.complete) {
+        dimensionsDisplay.textContent = `Image Dimensions: ${img.width} x ${img.height} pixels`;
+      } else {
+        img.onload = () => {
+          dimensionsDisplay.textContent = `Image Dimensions: ${img.width} x ${img.height} pixels`;
+        };
+      }
     });
   </script>
 </body>
