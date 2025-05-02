@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fraction Multiplication Problems</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f8ff;
+      cursor: pointer;
+      font-family: sans-serif;
+      user-select: none;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    .problem {
+      font-size: 5rem;
+      color: transparent;
+      -webkit-text-stroke: 2px black;
+      margin: 1rem 0;
+    }
+
+    .equation {
+      display: inline-block;
+    }
+
+    .fraction {
+      display: inline-block;
+      position: relative;
+      margin: 0 1rem;
+    }
+
+    .numerator, .denominator {
+      display: block;
+      text-align: center;
+    }
+
+    .line {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 2px solid black;
+      background-color: transparent;
+      height: 2px;
+      width: 60px;
+      margin-top: -1px;
+    }
+
+    .multiply, .equal {
+      position: relative;
+      top: -50px;
+      display: inline-block;
+      width: 3rem;
+      text-align: center;
+    }
+
+    .answer {
+      display: inline;
+    }
+
+    @media print {
+      body {
+        background: white !important;
+        margin: 0;
+        height: auto;
+        cursor: default;
+        display: block;
+        padding-top: 220px;
+      }
+
+      .answer {
+        display: none !important;
+      }
+
+      .problem {
+        font-size: 5.25rem; /* 25% smaller than 7rem */
+        color: transparent !important;
+        -webkit-text-stroke: 2px black;
+        page-break-inside: avoid;
+      }
+
+      @page {
+        margin: 0;
+        size: A4 portrait;
+      }
+
+      .equal {
+        display: inline-block;
+        width: 3rem;
+      }
+    }
+  </style>
+</head>
+<body onclick="handleClick()">
+  <div class="container">
+    <div id="problem1" class="problem">
+      <span id="equation1" class="equation"></span>
+      <span class="equal">=</span>
+      <span id="answer1" class="answer"></span>
+    </div>
+    <div id="problem2" class="problem">
+      <span id="equation2" class="equation"></span>
+      <span class="equal">=</span>
+      <span id="answer2" class="answer"></span>
+    </div>
+    <div id="problem3" class="problem">
+      <span id="equation3" class="equation"></span>
+      <span class="equal">=</span>
+      <span id="answer3" class="answer"></span>
+    </div>
+  </div>
+
+  <script>
+    let problems = Array.from({ length: 3 }, () => ({
+      a: 0, b: 0, c: 0, d: 0, answerShown: false
+    }));
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function findGCD(a, b) {
+      while (b !== 0) {
+        [a, b] = [b, a % b];
+      }
+      return a;
+    }
+
+    function generateProblems() {
+      problems.forEach((problem, i) => {
+        problem.a = getRandomInt(1, 9);
+        problem.b = getRandomInt(1, 9);
+        problem.c = getRandomInt(1, 9);
+        problem.d = getRandomInt(1, 9);
+
+        document.getElementById(`equation${i + 1}`).innerHTML = `
+          <span class="fraction">
+            <span class="numerator">${problem.a}</span>
+            <span class="line"></span>
+            <span class="denominator">${problem.b}</span>
+          </span>
+          <span class="multiply">×</span>
+          <span class="fraction">
+            <span class="numerator">${problem.c}</span>
+            <span class="line"></span>
+            <span class="denominator">${problem.d}</span>
+          </span>
+        `;
+
+        document.getElementById(`answer${i + 1}`).textContent = '';
+        problem.answerShown = false;
+      });
+    }
+
+    function handleClick() {
+      let allRevealed = problems.every(p => p.answerShown);
+
+      if (allRevealed) {
+        generateProblems();
+        return;
+      }
+
+      problems.forEach((problem, i) => {
+        if (!problem.answerShown) {
+          const num = problem.a * problem.c;
+          const den = problem.b * problem.d;
+          const gcd = findGCD(num, den);
+          const simplifiedNumerator = num / gcd;
+          const simplifiedDenominator = den / gcd;
+
+          document.getElementById(`answer${i + 1}`).innerHTML = `
+            <span class="fraction">
+              <span class="numerator">${simplifiedNumerator}</span>
+              <span class="line"></span>
+              <span class="denominator">${simplifiedDenominator}</span>
+            </span>
+          `;
+          problem.answerShown = true;
+        }
+      });
+    }
+
+    generateProblems();
+  </script>
+</body>
+</html>

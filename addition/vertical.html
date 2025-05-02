@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vertical Addition Problem</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f8ff;
+      cursor: pointer;
+      font-family: sans-serif;
+      user-select: none;
+    }
+
+    .container {
+      text-align: right;
+      font-size: 5rem;
+      color: transparent;
+      -webkit-text-stroke: 2px black;
+      line-height: 1.2;
+      position: relative;
+    }
+
+    .line {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      position: relative;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+    }
+
+    .line::before {
+      content: "";
+      position: absolute;
+      right: 0;
+      height: 2px;
+      background: black;
+      width: 135%;
+      transform: translateX(12%);
+    }
+  </style>
+</head>
+<body onclick="handleClick()">
+  <div class="container" id="problem">
+    <div id="line1"></div>
+    <div id="line2"></div>
+    <div class="line"></div>
+    <div id="answer"></div>
+  </div>
+
+  <script>
+    let currentA = 0;
+    let currentB = 0;
+    let answerShown = false;
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateProblem() {
+      currentA = getRandomInt(1, 99);
+      currentB = getRandomInt(1, 99);
+      document.getElementById('line1').textContent = currentA;
+      document.getElementById('line2').textContent = '+ ' + currentB;
+      document.getElementById('answer').textContent = '';
+      answerShown = false;
+    }
+
+    function handleClick() {
+      if (answerShown) {
+        generateProblem();
+      } else {
+        document.getElementById('answer').textContent = currentA + currentB;
+        answerShown = true;
+      }
+    }
+
+    generateProblem();
+  </script>
+</body>
+</html>

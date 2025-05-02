@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Horizontal Addition Problem</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #f0f8ff;
+      cursor: pointer;
+      font-family: sans-serif;
+      user-select: none;
+    }
+
+    #problem {
+      font-size: 5rem;
+      color: transparent;
+      -webkit-text-stroke: 2px black;
+      text-align: center;
+    }
+
+    #answer {
+      display: inline;
+    }
+  </style>
+</head>
+<body onclick="handleClick()">
+  <div id="problem">
+    <span id="equation"></span>
+    <span id="answer"></span>
+  </div>
+
+  <script>
+    let currentA = 0;
+    let currentB = 0;
+    let answerShown = false;
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function generateProblem() {
+      currentA = getRandomInt(1, 99);
+      currentB = getRandomInt(1, 99);
+      document.getElementById('equation').textContent = `${currentA} + ${currentB}`;
+      document.getElementById('answer').textContent = '';
+      answerShown = false;
+    }
+
+    function handleClick() {
+      if (answerShown) {
+        generateProblem();
+      } else {
+        document.getElementById('answer').textContent = ` = ${currentA + currentB}`;
+        answerShown = true;
+      }
+    }
+
+    generateProblem();
+  </script>
+</body>
+</html>
